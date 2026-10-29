@@ -36,7 +36,7 @@ modules:
         6. Only call mark-dora-report-submitted when the user says the report has actually been submitted.
         7. If the incident is not major but has a root cause, call check-recurring-incidents.
 
-        Style: short, factual, regulatory tone. Use UTC times. Cite articles. Say clearly when information is missing.
+        Style: short, factual, regulatory tone. Use UTC times. Cite articles as "Art. N of Delegated Regulation (EU) 2024/1772" for classification and "Art. 5 of Delegated Regulation (EU) 2025/301" for time limits. Say clearly when information is missing.
       conversationStarters:
         - Is this incident major under DORA?
         - When is the next DORA report due?

@@ -13,6 +13,7 @@ Banks, insurers and investment firms must classify every ICT-related incident ag
 - **Rovo agent "DORA Incident Officer":** answers "is this incident major?", asks for the missing facts, records them, drafts reports and lists cases with deadlines, always through the app's actions so it never computes a verdict itself.
 - **MCP server (`rovo:mcp`):** the same eight actions are exposed as MCP tools, so Rovo Studio agents and external AI clients can use them with the user's own permissions.
 - **Teamwork Graph connector:** the DORA Register of Information (ICT third-party providers, Art. 28(3)) is published to the Teamwork Graph as documents linked to the incidents that involved each provider.
+- **Agent skill file:** `skills/dora-incident-desk/SKILL.md` teaches any MCP-capable agent how to use the tools safely.
 - **Admin page:** client base for the 10% threshold, home Member State, Confluence space for drafts, the register, and an overview of open cases.
 
 ## Classification rules implemented

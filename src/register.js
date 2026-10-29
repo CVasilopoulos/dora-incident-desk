@@ -65,9 +65,14 @@ export function providerId(name) {
   return `ict-provider-${String(name).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
 }
 
+const baseName = (name) => String(name || '').replace(/\([^)]*\)/g, ' ').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
 export function matchProvider(entries, name) {
   const id = providerId(name);
-  return entries.find((e) => e.id === id) || null;
+  const exact = entries.find((e) => e.id === id);
+  if (exact) return exact;
+  const base = baseName(name);
+  return (base && entries.find((e) => baseName(e.provider) === base)) || null;
 }
 
 export function providerText(e, incidents) {

@@ -46,3 +46,9 @@ test('graph objects are documents linked to the incidents that involved the prov
   assert.equal(o.updateSequenceNumber, 42);
   assert.equal(toGraphObject(entries[1], [], '', 1).associations, undefined);
 });
+
+test('a provider named without its parenthetical qualifier still matches the register', () => {
+  const { entries } = parseRegister(CSV);
+  assert.equal(matchProvider(entries, 'CardNet Processing').provider, 'CardNet Processing (fictional)');
+  assert.equal(matchProvider(entries, 'Unknown Cloud'), null);
+});
