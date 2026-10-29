@@ -1,0 +1,344 @@
+modules:
+  jira:issuePanel:
+    - key: dora-panel
+      resource: main
+      resolver:
+        function: resolver
+      render: native
+      title: DORA Incident Desk
+      icon: resource:icons;dora.svg
+  jira:adminPage:
+    - key: dora-settings
+      resource: settings
+      resolver:
+        function: resolver
+      render: native
+      title: DORA Incident Desk
+  rovo:agent:
+    - key: dora-incident-officer
+      name: DORA Incident Officer
+      description: Classifies ICT incidents under EU DORA, tracks the reporting clock and drafts the regulatory reports from Jira incidents.
+      icon: resource:icons;dora.svg
+      prompt: |
+        You are the DORA Incident Officer for a financial entity regulated under the EU Digital Operational Resilience Act (Regulation (EU) 2022/2554).
+        You help incident managers decide whether an ICT-related incident is major and meet the reporting time limits.
+
+        Rules you apply (the app computes them; never compute a verdict yourself):
+        - Classification follows Commission Delegated Regulation (EU) 2024/1772. An incident is major when it affects critical services and either involves successful malicious unauthorised access (Art. 9(5)(b)) or meets two or more materiality thresholds in Art. 9(1)-(6).
+        - Reporting time limits follow Delegated Regulation (EU) 2025/301, Art. 5: initial notification within 4 hours of classification as major and no later than 24 hours after becoming aware; intermediate report within 72 hours of the initial notification; final report one month after the latest intermediate report.
+
+        How to work:
+        1. Find the incident. Use the issue key from the user's message or from the current issue. If you have neither, ask for it or call list-dora-cases.
+        2. Call get-dora-case before giving any verdict or deadline. Quote the verdict, the criteria that are met and their articles, and every due time in UTC.
+        3. When the user gives new facts (clients affected, duration, downtime, costs, Member States, media coverage, data impact, malicious access, root cause, third-party providers), call the matching record action (record-dora-impact, record-dora-timeline or record-dora-reputation-data) with only those facts, then report how the verdict changed.
+        4. If criteria are still unknown, ask targeted questions for exactly those criteria. Never invent numbers, times or facts.
+        5. To prepare a report, call draft-dora-report with the report type (initial, intermediate or final) and give the link and the number of fields still to complete. Remind the user that a person must review and submit the report to the competent authority; you never submit it.
+        6. Only call mark-dora-report-submitted when the user says the report has actually been submitted.
+        7. If the incident is not major but has a root cause, call check-recurring-incidents.
+
+        Style: short, factual, regulatory tone. Use UTC times. Cite articles. Say clearly when information is missing.
+      conversationStarters:
+        - Is this incident major under DORA?
+        - When is the next DORA report due?
+        - Draft the initial notification for this incident
+        - Which DORA cases have reports due soon?
+      actions:
+        - get-dora-case
+        - record-dora-impact
+        - record-dora-timeline
+        - record-dora-reputation-data
+        - draft-dora-report
+        - mark-dora-report-submitted
+        - list-dora-cases
+        - check-recurring-incidents
+  action:
+    - key: get-dora-case
+      name: Get DORA case
+      function: getDoraCase
+      actionVerb: GET
+      description: Returns the DORA classification verdict, the materiality criteria with reasons and articles, the reporting deadlines and the recorded facts for one Jira incident.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the incident, for example INC-12. Leave empty when the user is viewing the incident.
+    - key: record-dora-impact
+      name: Record DORA impact
+      function: recordDoraFacts
+      actionVerb: UPDATE
+      description: Records whether critical services are affected, how many clients, counterparts and transactions are affected, and the economic impact of an incident, then returns the updated DORA verdict. Only pass facts the user stated.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the incident. Leave empty when the user is viewing the incident.
+        criticalServicesAffected:
+          title: Critical services affected
+          type: boolean
+          required: false
+          description: True if ICT services supporting critical or important functions, or authorised financial services, are affected.
+        criticalServicesNotes:
+          title: Critical services notes
+          type: string
+          required: false
+          description: Which critical services are affected.
+        clientsAffected:
+          title: Clients affected
+          type: integer
+          required: false
+          description: Number of clients affected.
+        clientsAffectedPct:
+          title: Percent of clients affected
+          type: number
+          required: false
+          description: Percentage of all clients using the affected service.
+        counterpartsAffectedPct:
+          title: Percent of counterparts affected
+          type: number
+          required: false
+          description: Percentage of financial counterparts affected.
+        transactionsAffectedPct:
+          title: Percent of transactions affected
+          type: number
+          required: false
+          description: Affected transactions as a percentage of the daily average number.
+        transactionValueAffectedPct:
+          title: Percent of transaction value affected
+          type: number
+          required: false
+          description: Value of affected transactions as a percentage of the daily average value.
+        relevantClientsAffected:
+          title: Relevant clients affected
+          type: boolean
+          required: false
+          description: True if relevant clients or financial counterparts are affected.
+        economicImpactEur:
+          title: Economic impact in EUR
+          type: number
+          required: false
+          description: Direct and indirect costs and losses in EUR.
+    - key: record-dora-timeline
+      name: Record DORA timeline
+      function: recordDoraFacts
+      actionVerb: UPDATE
+      description: Records incident times (occurred, aware, resolved), duration, downtime, affected Member States, root cause and ICT third-party providers, then returns the updated DORA verdict and deadlines. Only pass facts the user stated.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the incident. Leave empty when the user is viewing the incident.
+        occurredAt:
+          title: Occurred at
+          type: string
+          required: false
+          description: When the incident occurred, ISO 8601 date and time.
+        awareAt:
+          title: Aware at
+          type: string
+          required: false
+          description: When the entity became aware of the incident, ISO 8601 date and time.
+        resolvedAt:
+          title: Resolved at
+          type: string
+          required: false
+          description: When the incident was resolved, ISO 8601 date and time.
+        durationHours:
+          title: Duration in hours
+          type: number
+          required: false
+          description: Duration of the incident in hours, if known directly.
+        downtimeHours:
+          title: Downtime in hours
+          type: number
+          required: false
+          description: Downtime of services supporting critical or important functions, in hours.
+        memberStates:
+          title: Member States
+          type: string
+          required: false
+          description: Comma-separated two-letter codes of Member States with impact, for example GR, CY.
+        rootCause:
+          title: Root cause
+          type: string
+          required: false
+          description: Apparent root cause in a few words.
+        providers:
+          title: Third-party providers
+          type: string
+          required: false
+          description: Comma-separated names of ICT third-party service providers involved.
+    - key: record-dora-reputation-data
+      name: Record DORA reputation and data
+      function: recordDoraFacts
+      actionVerb: UPDATE
+      description: Records reputational impact (media coverage, repeated complaints, regulatory requirements at risk, likely client loss) and data impact (data losses, malicious unauthorised access), then returns the updated DORA verdict. Only pass facts the user stated.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the incident. Leave empty when the user is viewing the incident.
+        mediaCoverage:
+          title: Media coverage
+          type: boolean
+          required: false
+          description: True if the incident has been reflected in the media.
+        repeatedComplaints:
+          title: Repeated complaints
+          type: boolean
+          required: false
+          description: True if there were repeated complaints from different clients or counterparts.
+        regulatoryBreach:
+          title: Regulatory requirements at risk
+          type: boolean
+          required: false
+          description: True if the entity will not, or is likely not to, meet regulatory requirements.
+        clientLossLikely:
+          title: Client loss likely
+          type: boolean
+          required: false
+          description: True if a loss of clients or counterparts with a material business impact is likely.
+        dataImpact:
+          title: Data impact
+          type: boolean
+          required: false
+          description: True if data availability, authenticity, integrity or confidentiality was impacted with an adverse effect on business objectives or regulatory compliance.
+        maliciousAccess:
+          title: Malicious access
+          type: boolean
+          required: false
+          description: True if there was successful, malicious and unauthorised access to network and information systems.
+    - key: draft-dora-report
+      name: Draft DORA report
+      function: draftDoraReport
+      actionVerb: CREATE
+      description: Drafts a DORA initial notification, intermediate report or final report from the incident and places it in Confluence or as a Jira comment. Never submits anything to an authority.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the incident. Leave empty when the user is viewing the incident.
+        reportType:
+          title: Report type
+          type: string
+          required: true
+          description: One of initial, intermediate or final.
+    - key: mark-dora-report-submitted
+      name: Mark DORA report submitted
+      function: markDoraReportSubmitted
+      actionVerb: UPDATE
+      description: Records that a DORA report was submitted to the competent authority, which starts the next reporting clock. Use only when the user confirms the submission happened.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the incident. Leave empty when the user is viewing the incident.
+        reportType:
+          title: Report type
+          type: string
+          required: true
+          description: One of initial, intermediate or final.
+        submittedAt:
+          title: Submitted at
+          type: string
+          required: false
+          description: When it was submitted, ISO 8601. Defaults to now.
+    - key: list-dora-cases
+      name: List DORA cases
+      function: listDoraCases
+      actionVerb: GET
+      description: Lists assessed incidents with their verdict and next reporting deadline, soonest first.
+      inputs:
+        onlyMajor:
+          title: Only major incidents
+          type: boolean
+          required: false
+          description: True to list only incidents classified as major.
+        limit:
+          title: Limit
+          type: integer
+          required: false
+          description: Maximum number of cases to return, default 25.
+    - key: check-recurring-incidents
+      name: Check recurring incidents
+      function: checkRecurringIncidents
+      actionVerb: GET
+      description: Checks whether non-major incidents with the same apparent root cause in the last 6 months are collectively a major incident.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of one of the incidents. Leave empty when the user is viewing the incident.
+  rovo:mcp:
+    - key: dora-mcp
+      name: DORA Incident Desk
+      tools:
+        - get-dora-case
+        - record-dora-impact
+        - record-dora-timeline
+        - record-dora-reputation-data
+        - draft-dora-report
+        - mark-dora-report-submitted
+        - list-dora-cases
+        - check-recurring-incidents
+  graph:connector:
+    - key: dora-register-connector
+      name: DORA Register of Information
+      icons:
+        light: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+        dark: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      objectTypes:
+        - atlassian:document
+      capabilities:
+        replicatesPermissions: false
+        syncFidelity: upsert
+        supportsIncrementalSync: false
+      datasource:
+        onConnectionChange:
+          function: onConnectionChangeFn
+  function:
+    - key: onConnectionChangeFn
+      handler: index.onConnectionChange
+    - key: resolver
+      handler: index.handler
+    - key: getDoraCase
+      handler: index.getDoraCase
+    - key: recordDoraFacts
+      handler: index.recordDoraFacts
+    - key: draftDoraReport
+      handler: index.draftDoraReport
+    - key: markDoraReportSubmitted
+      handler: index.markDoraReportSubmitted
+    - key: listDoraCases
+      handler: index.listDoraCases
+    - key: checkRecurringIncidents
+      handler: index.checkRecurringIncidents
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+  - key: settings
+    path: src/frontend/settings.jsx
+  - key: icons
+    path: static/icons
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - storage:app
+    - write:object:jira
+    - read:object:jira
+    - delete:object:jira
+    - read:space:confluence
+    - write:page:confluence
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/7c911900-a823-4722-b696-0ab8ac155b39
